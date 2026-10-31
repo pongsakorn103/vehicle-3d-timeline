@@ -275,17 +275,14 @@
             margin-top: 2px;
         }
 
-        /* Hidden File Input */
         #file-input {
             display: none;
         }
     </style>
 
-    <!-- Leaflet JS -->
+    <!-- External Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- SheetJS for Excel Reading -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -295,11 +292,11 @@
     <!-- Header Controls -->
     <div class="app-header">
         <div class="app-title">
-            <i class="fa-solid me-1 fa-route" style="color: var(--accent);"></i>
+            <i class="fa-solid fa-route" style="color: var(--accent);"></i>
             <span>3D Timeline Track</span>
         </div>
         
-        <button class="btn" onclick="document.getElementById('file-input').click()">
+        <button class="btn" onclick="triggerFileInput()">
             <i class="fa-solid fa-file-excel"></i> อัปโหลดไฟล์ Excel
         </button>
         <input type="file" id="file-input" accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
@@ -313,7 +310,7 @@
             <span style="font-size: 0.75rem; color: var(--text-sub);">สีรถ:</span>
             <div class="color-dot active" style="background: #ffffff;" onclick="setCarColor(0xffffff, this)" title="สีขาว"></div>
             <div class="color-dot" style="background: #111111;" onclick="setCarColor(0x111111, this)" title="สีดำ"></div>
-            <div class="color-dot" style="background: #94a3b8;" onclick="setCarColor(0x94a3b8, this)" title="สีเทาสิลเวอร์"></div>
+            <div class="color-dot" style="background: #94a3b8;" onclick="setCarColor(0x94a3b8, this)" title="สีเทา"></div>
             <div class="color-dot" style="background: #ef4444;" onclick="setCarColor(0xef4444, this)" title="สีแดง"></div>
             <div class="color-dot" style="background: #3b82f6;" onclick="setCarColor(0x3b82f6, this)" title="สีน้ำเงิน"></div>
         </div>
@@ -324,10 +321,10 @@
         <i class="fa-solid fa-car-side" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i>
         <h2 style="margin-bottom: 10px; font-weight: 600;">3D Vehicle Timeline</h2>
         <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px;">
-            อัปโหลดไฟล์ข้อมูลทะเบียนรถ หรือกดปุ่มข้อมูลตัวอย่างเพื่อแสดงเส้นทางแอนิเมชัน 3D แบบเคลื่อนที่ตามจุดเวลา
+            อัปโหลดไฟล์ข้อมูลทะเบียนรถ หรือกดปุ่มข้อมูลตัวอย่างเพื่อแสดงเส้นทางแอนิเมชัน 3D
         </p>
         <div style="display: flex; gap: 10px; justify-content: center;">
-            <button class="btn" onclick="document.getElementById('file-input').click()">
+            <button class="btn" onclick="triggerFileInput()">
                 <i class="fa-solid fa-upload"></i> อัปโหลดไฟล์
             </button>
             <button class="btn btn-outline" onclick="loadSampleData()">
@@ -336,7 +333,7 @@
         </div>
     </div>
 
-    <!-- Bottom Controls Panel -->
+    <!-- Controls Panel -->
     <div class="controls-panel disabled" id="controls-panel">
         <input type="range" id="timeline" class="timeline-slider" min="0" max="100" value="0" step="0.1" oninput="onSeek(this.value)">
         
@@ -374,28 +371,29 @@
     </div>
 
     <script>
-        // --- Global Variables ---
-        let map, car3DGroup, carBodyMesh;
-        let routeData = [];
-        let isPlaying = false;
-        let currentIndex = 0;
-        let animProgress = 0;
-        let speed = 1.0;
-        let animFrameId = null;
-        let currentCarColor = 0xffffff;
+        var map = null;
+        var car3DGroup = null;
+        var carBodyMesh = null;
+        var routeData = [];
+        var isPlaying = false;
+        var currentIndex = 0;
+        var animProgress = 0;
+        var speed = 1.0;
+        var animFrameId = null;
+        var currentCarColor = 0xffffff;
+        var pathPolyline = null;
+        var carMarker = null;
 
-        // Sample Data (4ขฌ 2080 กทม)
-        const sampleExcelData = [
+        var sampleExcelData = [
             { "ลำดับ": 77, "DATE - TIME": "2026/10/22 - 13:27:06", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "77 - ทับช้าง 2_EX08", "LATITUDE": 13.773427, "LONGITUDE": 100.689188 },
             { "ลำดับ": 76, "DATE - TIME": "2026/10/22 - 14:47:11", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "76 - บางปะอิน_ขาออก", "LATITUDE": 14.270696, "LONGITUDE": 100.613202 },
-            { "ลำดับ": 75, "DATE - TIME": "2026/10/22 - 15:43:15", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - แยกปากบางบางงา_ออก", "LATITUDE": 14.848605, "LONGITUDE": 100.444330 },
-            { "ลำดับ": 74, "DATE - TIME": "2026/10/22 - 16:07:17", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - สรรพยา_ขาออก", "LATITUDE": 15.117418, "LONGITUDE": 100.274551 },
-            { "ลำดับ": 73, "DATE - TIME": "2026/10/22 - 17:29:46", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - เนินขี้เหล็ก_ขาออก", "LATITUDE": 15.849384, "LONGITUDE": 99.923986 },
-            { "ลำดับ": 72, "DATE - TIME": "2026/10/22 - 19:10:01", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - โกสัมพี_ขาออก", "LATITUDE": 16.655577, "LONGITUDE": 99.318526 },
-            { "ลำดับ": 71, "DATE - TIME": "2026/10/22 - 19:31:37", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - แยกแม่สอด_ขาขึ้น", "LATITUDE": 16.841332, "LONGITUDE": 99.113800 }
+            { "ลำดับ": 75, "DATE - TIME": "2026/10/22 - 15:43:15", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "75 - แยกปากบางบางงา_ออก", "LATITUDE": 14.848605, "LONGITUDE": 100.444330 },
+            { "ลำดับ": 74, "DATE - TIME": "2026/10/22 - 16:07:17", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "74 - สรรพยา_ขาออก", "LATITUDE": 15.117418, "LONGITUDE": 100.274551 },
+            { "ลำดับ": 73, "DATE - TIME": "2026/10/22 - 17:29:46", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "73 - เนินขี้เหล็ก_ขาออก", "LATITUDE": 15.849384, "LONGITUDE": 99.923986 },
+            { "ลำดับ": 72, "DATE - TIME": "2026/10/22 - 19:10:01", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "72 - โกสัมพี_ขาออก", "LATITUDE": 16.655577, "LONGITUDE": 99.318526 },
+            { "ลำดับ": 71, "DATE - TIME": "2026/10/22 - 19:31:37", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "71 - แยกแม่สอด_ขาขึ้น", "LATITUDE": 16.841332, "LONGITUDE": 99.113800 }
         ];
 
-        // --- Initialize Map & Free Tile Server ---
         function initMap() {
             map = L.map('map', {
                 center: [13.7563, 100.5018],
@@ -403,7 +401,6 @@
                 zoomControl: false
             });
 
-            // OpenStreetMap Standard Tile Layer (Free 100%)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap contributors'
@@ -412,34 +409,30 @@
             L.control.zoom({ position: 'bottomright' }).addTo(map);
         }
 
-        // --- Build 3D Car Model (Three.js Canvas Overlay) ---
         function create3DCar() {
-            const container = document.createElement('div');
+            var container = document.createElement('div');
             container.style.width = '60px';
             container.style.height = '60px';
 
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
             camera.position.set(0, 10, 15);
             camera.lookAt(0, 0, 0);
 
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(60, 60);
             container.appendChild(renderer.domElement);
 
-            // Ambient & Directional Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            var ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            var dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
             dirLight.position.set(5, 10, 7);
             scene.add(dirLight);
 
-            // Car Group
             car3DGroup = new THREE.Group();
 
-            // Car Chassis/Body
-            const bodyGeo = new THREE.BoxGeometry(2.2, 0.8, 4.2);
-            const bodyMat = new THREE.MeshStandardMaterial({ 
+            var bodyGeo = new THREE.BoxGeometry(2.2, 0.8, 4.2);
+            var bodyMat = new THREE.MeshStandardMaterial({ 
                 color: currentCarColor, 
                 metalness: 0.6, 
                 roughness: 0.2 
@@ -448,26 +441,14 @@
             carBodyMesh.position.y = 0.6;
             car3DGroup.add(carBodyMesh);
 
-            // Cabin / Roof
-            const cabinGeo = new THREE.BoxGeometry(1.8, 0.6, 2.2);
-            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1 });
-            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            var cabinGeo = new THREE.BoxGeometry(1.8, 0.6, 2.2);
+            var cabinMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1 });
+            var cabin = new THREE.Mesh(cabinGeo, cabinMat);
             cabin.position.set(0, 1.2, -0.2);
             car3DGroup.add(cabin);
 
-            // Headlights Glowing
-            const lightGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
-            const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-            const headL = new THREE.Mesh(lightGeo, lightMat);
-            headL.position.set(-0.8, 0.6, 2.1);
-            const headR = headL.clone();
-            headR.position.x = 0.8;
-            car3DGroup.add(headL);
-            car3DGroup.add(headR);
-
             scene.add(car3DGroup);
 
-            // Animate 3D Scene
             function animate3D() {
                 requestAnimationFrame(animate3D);
                 renderer.render(scene, camera);
@@ -482,37 +463,34 @@
             });
         }
 
-        // --- Set Color Function ---
         function setCarColor(hexColor, el) {
             currentCarColor = hexColor;
             if (carBodyMesh) {
                 carBodyMesh.material.color.setHex(hexColor);
             }
-            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-            if(el) el.classList.add('active');
+            var dots = document.querySelectorAll('.color-dot');
+            dots.forEach(function(d) { d.classList.remove('active'); });
+            if (el) el.classList.add('active');
         }
 
-        // --- Process Data & Draw Route ---
-        let pathPolyline = null;
-        let carMarker = null;
-
         function processRouteData(data) {
-            routeData = data.sort((a, b) => new Date(a["DATE - TIME"]) - new Date(b["DATE - TIME"]));
+            if (!data || !data.length) return;
 
-            if (routeData.length === 0) return;
+            routeData = data.sort(function(a, b) {
+                return new Date(a["DATE - TIME"]) - new Date(b["DATE - TIME"]);
+            });
 
-            // UI Adjustments
             document.getElementById('banner').classList.add('hidden');
             document.getElementById('controls-panel').classList.remove('disabled');
             document.getElementById('sidebar').classList.remove('collapsed');
 
-            // Clear Old Layers
             if (pathPolyline) map.removeLayer(pathPolyline);
             if (carMarker) map.removeLayer(carMarker);
 
-            const latLngs = routeData.map(d => [d.LATITUDE, d.LONGITUDE]);
+            var latLngs = routeData.map(function(d) { 
+                return [parseFloat(d.LATITUDE), parseFloat(d.LONGITUDE)]; 
+            });
 
-            // Draw Glowing Polyline
             pathPolyline = L.polyline(latLngs, {
                 color: '#06b6d4',
                 weight: 4,
@@ -520,25 +498,20 @@
                 dashArray: '8, 8'
             }).addTo(map);
 
-            // Fit Bounds
             map.fitBounds(pathPolyline.getBounds(), { padding: [50, 50] });
 
-            // Create 3D Car Marker
             carMarker = L.marker(latLngs[0], { icon: create3DCar() }).addTo(map);
 
-            // Populate Sidebar Log
-            const logList = document.getElementById('log-list');
+            var logList = document.getElementById('log-list');
             logList.innerHTML = '';
-            document.getElementById('total-count').innerText = `${routeData.length} จุด`;
+            document.getElementById('total-count').innerText = routeData.length + " จุด";
 
-            routeData.forEach((item, idx) => {
-                const div = document.createElement('div');
-                div.className = `log-item ${idx === 0 ? 'active' : ''}`;
-                div.onclick = () => jumpToIndex(idx);
-                div.innerHTML = `
-                    <div class="time"><i class="fa-regular fa-clock"></i> ${item["DATE - TIME"]}</div>
-                    <div class="location"><i class="fa-solid fa-camera"></i> ${item["ลำดับ - จุดติดตั้งกล้อง"] || 'จุดตรวจ'}</div>
-                `;
+            routeData.forEach(function(item, idx) {
+                var div = document.createElement('div');
+                div.className = "log-item " + (idx === 0 ? "active" : "");
+                div.onclick = function() { jumpToIndex(idx); };
+                div.innerHTML = '<div class="time"><i class="fa-regular fa-clock"></i> ' + (item["DATE - TIME"] || '') + '</div>' +
+                                '<div class="location"><i class="fa-solid fa-camera"></i> ' + (item["ลำดับ - จุดติดตั้งกล้อง"] || item["จุดติดตั้งกล้อง"] || 'จุดตรวจ') + '</div>';
                 logList.appendChild(div);
             });
 
@@ -547,18 +520,26 @@
             updateUI();
         }
 
-        // --- File Upload Handler ---
+        function triggerFileInput() {
+            document.getElementById('file-input').click();
+        }
+
         function handleFileUpload(e) {
-            const file = e.target.files[0];
+            var file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
+            var reader = new FileReader();
             reader.onload = function(evt) {
-                const data = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                processRouteData(jsonData);
+                try {
+                    var data = new Uint8Array(evt.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    var firstSheetName = workbook.SheetNames[0];
+                    var firstSheet = workbook.Sheets[firstSheetName];
+                    var jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    processRouteData(jsonData);
+                } catch(err) {
+                    alert("ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบรูปแบบไฟล์ Excel/CSV");
+                }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -567,7 +548,6 @@
             processRouteData(sampleExcelData);
         }
 
-        // --- Animation Logic & Slow-Motion ---
         function updateAnimation() {
             if (!isPlaying || routeData.length < 2) return;
 
@@ -584,16 +564,15 @@
                 }
             }
 
-            const p1 = routeData[currentIndex];
-            const p2 = routeData[currentIndex + 1];
+            var p1 = routeData[currentIndex];
+            var p2 = routeData[currentIndex + 1];
 
-            const currentLat = p1.LATITUDE + (p2.LATITUDE - p1.LATITUDE) * animProgress;
-            const currentLng = p1.LONGITUDE + (p2.LONGITUDE - p1.LONGITUDE) * animProgress;
+            var currentLat = parseFloat(p1.LATITUDE) + (parseFloat(p2.LATITUDE) - parseFloat(p1.LATITUDE)) * animProgress;
+            var currentLng = parseFloat(p1.LONGITUDE) + (parseFloat(p2.LONGITUDE) - parseFloat(p1.LONGITUDE)) * animProgress;
 
             carMarker.setLatLng([currentLat, currentLng]);
 
-            // Heading Angle Calculation
-            const angle = Math.atan2(p2.LONGITUDE - p1.LONGITUDE, p2.LATITUDE - p1.LATITUDE) * (180 / Math.PI);
+            var angle = Math.atan2(parseFloat(p2.LONGITUDE) - parseFloat(p1.LONGITUDE), parseFloat(p2.LATITUDE) - parseFloat(p1.LATITUDE)) * (180 / Math.PI);
             if (car3DGroup) {
                 car3DGroup.rotation.y = angle * (Math.PI / 180);
             }
@@ -604,7 +583,7 @@
 
         function togglePlay() {
             isPlaying = !isPlaying;
-            const btn = document.getElementById('play-btn');
+            var btn = document.getElementById('play-btn');
             if (isPlaying) {
                 btn.innerHTML = '<i class="fa-solid fa-pause"></i> หยุด';
                 updateAnimation();
@@ -620,7 +599,7 @@
             animProgress = 0;
             document.getElementById('play-btn').innerHTML = '<i class="fa-solid fa-play"></i> เล่น';
             if (routeData.length > 0) {
-                carMarker.setLatLng([routeData[0].LATITUDE, routeData[0].LONGITUDE]);
+                carMarker.setLatLng([parseFloat(routeData[0].LATITUDE), parseFloat(routeData[0].LONGITUDE)]);
             }
             updateUI();
         }
@@ -630,8 +609,8 @@
         }
 
         function onSeek(val) {
-            const total = routeData.length - 1;
-            const target = (val / 100) * total;
+            var total = routeData.length - 1;
+            var target = (val / 100) * total;
             currentIndex = Math.floor(target);
             animProgress = target - currentIndex;
             
@@ -640,11 +619,11 @@
                 animProgress = 1;
             }
 
-            const p1 = routeData[currentIndex];
-            const p2 = routeData[currentIndex + 1] || p1;
+            var p1 = routeData[currentIndex];
+            var p2 = routeData[currentIndex + 1] || p1;
 
-            const currentLat = p1.LATITUDE + (p2.LATITUDE - p1.LATITUDE) * animProgress;
-            const currentLng = p1.LONGITUDE + (p2.LONGITUDE - p1.LONGITUDE) * animProgress;
+            var currentLat = parseFloat(p1.LATITUDE) + (parseFloat(p2.LATITUDE) - parseFloat(p1.LATITUDE)) * animProgress;
+            var currentLng = parseFloat(p1.LONGITUDE) + (parseFloat(p2.LONGITUDE) - parseFloat(p1.LONGITUDE)) * animProgress;
 
             carMarker.setLatLng([currentLat, currentLng]);
             updateUI();
@@ -653,30 +632,28 @@
         function jumpToIndex(idx) {
             currentIndex = idx;
             animProgress = 0;
-            const target = routeData[idx];
-            carMarker.setLatLng([target.LATITUDE, target.LONGITUDE]);
-            map.panTo([target.LATITUDE, target.LONGITUDE]);
+            var target = routeData[idx];
+            carMarker.setLatLng([parseFloat(target.LATITUDE), parseFloat(target.LONGITUDE)]);
+            map.panTo([parseFloat(target.LATITUDE), parseFloat(target.LONGITUDE)]);
             updateUI();
         }
 
         function updateUI() {
             if (!routeData.length) return;
-            const total = routeData.length - 1;
-            const currentTotal = currentIndex + animProgress;
-            const progressPct = (currentTotal / total) * 100;
+            var total = routeData.length - 1;
+            var currentTotal = currentIndex + animProgress;
+            var progressPct = (currentTotal / total) * 100;
             
             document.getElementById('timeline').value = progressPct;
-            document.getElementById('time-display').innerText = routeData[currentIndex]["DATE - TIME"];
+            document.getElementById('time-display').innerText = routeData[currentIndex]["DATE - TIME"] || '--:--:--';
 
-            // Update Active Log
-            const items = document.querySelectorAll('.log-item');
-            items.forEach((item, i) => {
+            var items = document.querySelectorAll('.log-item');
+            items.forEach(function(item, i) {
                 if (i === currentIndex) item.classList.add('active');
                 else item.classList.remove('active');
             });
         }
 
-        // Initialize Map on Load
         window.onload = initMap;
     </script>
 </body>
