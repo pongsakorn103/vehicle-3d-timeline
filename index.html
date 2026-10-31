@@ -46,7 +46,7 @@
             background: #0f172a;
         }
 
-        /* Overlay Layout */
+        /* App Header */
         .app-header {
             position: absolute;
             top: 15px;
@@ -102,7 +102,7 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* Pre-upload Notice Overlay */
+        /* Pre-upload Banner */
         .instruction-banner {
             position: absolute;
             top: 50%;
@@ -149,7 +149,7 @@
             border-color: #fff;
         }
 
-        /* Control Panel */
+        /* Controls Panel */
         .controls-panel {
             position: absolute;
             bottom: 20px;
@@ -321,7 +321,7 @@
         <i class="fa-solid fa-car-side" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i>
         <h2 style="margin-bottom: 10px; font-weight: 600;">3D Vehicle Timeline</h2>
         <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px;">
-            อัปโหลดไฟล์ข้อมูลทะเบียนรถ หรือกดปุ่มข้อมูลตัวอย่างเพื่อแสดงเส้นทางแอนิเมชัน 3D
+            รองรับทั้งไฟล์ดิบและไฟล์ที่แปลงแล้ว อัปโหลดไฟล์ Excel/CSV เพื่อแสดงเส้นทางแอนิเมชัน 3D
         </p>
         <div style="display: flex; gap: 10px; justify-content: center;">
             <button class="btn" onclick="triggerFileInput()">
@@ -385,13 +385,13 @@
         var carMarker = null;
 
         var sampleExcelData = [
-            { "ลำดับ": 77, "DATE - TIME": "2026/10/22 - 13:27:06", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "77 - ทับช้าง 2_EX08", "LATITUDE": 13.773427, "LONGITUDE": 100.689188 },
-            { "ลำดับ": 76, "DATE - TIME": "2026/10/22 - 14:47:11", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "76 - บางปะอิน_ขาออก", "LATITUDE": 14.270696, "LONGITUDE": 100.613202 },
-            { "ลำดับ": 75, "DATE - TIME": "2026/10/22 - 15:43:15", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "75 - แยกปากบางบางงา_ออก", "LATITUDE": 14.848605, "LONGITUDE": 100.444330 },
-            { "ลำดับ": 74, "DATE - TIME": "2026/10/22 - 16:07:17", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "74 - สรรพยา_ขาออก", "LATITUDE": 15.117418, "LONGITUDE": 100.274551 },
-            { "ลำดับ": 73, "DATE - TIME": "2026/10/22 - 17:29:46", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "73 - เนินขี้เหล็ก_ขาออก", "LATITUDE": 15.849384, "LONGITUDE": 99.923986 },
-            { "ลำดับ": 72, "DATE - TIME": "2026/10/22 - 19:10:01", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "72 - โกสัมพี_ขาออก", "LATITUDE": 16.655577, "LONGITUDE": 99.318526 },
-            { "ลำดับ": 71, "DATE - TIME": "2026/10/22 - 19:31:37", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "ลำดับ - จุดติดตั้งกล้อง": "71 - แยกแม่สอด_ขาขึ้น", "LATITUDE": 16.841332, "LONGITUDE": 99.113800 }
+            { "ลำดับ": 77, "DATE - TIME": "2026/10/22 - 13:27:06", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "77 - ทับช้าง 2_EX08", "LATITUDE": 13.773427, "LONGITUDE": 100.689188 },
+            { "ลำดับ": 76, "DATE - TIME": "2026/10/22 - 14:47:11", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "76 - บางปะอิน_ขาออก", "LATITUDE": 14.270696, "LONGITUDE": 100.613202 },
+            { "ลำดับ": 75, "DATE - TIME": "2026/10/22 - 15:43:15", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "75 - แยกปากบางบางงา_ออก", "LATITUDE": 14.848605, "LONGITUDE": 100.444330 },
+            { "ลำดับ": 74, "DATE - TIME": "2026/10/22 - 16:07:17", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "74 - สรรพยา_ขาออก", "LATITUDE": 15.117418, "LONGITUDE": 100.274551 },
+            { "ลำดับ": 73, "DATE - TIME": "2026/10/22 - 17:29:46", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "73 - เนินขี้เหล็ก_ขาออก", "LATITUDE": 15.849384, "LONGITUDE": 99.923986 },
+            { "ลำดับ": 72, "DATE - TIME": "2026/10/22 - 19:10:01", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "72 - โกสัมพี_ขาออก", "LATITUDE": 16.655577, "LONGITUDE": 99.318526 },
+            { "ลำดับ": 71, "DATE - TIME": "2026/10/22 - 19:31:37", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "71 - แยกแม่สอด_ขาขึ้น", "LATITUDE": 16.841332, "LONGITUDE": 99.113800 }
         ];
 
         function initMap() {
@@ -473,10 +473,49 @@
             if (el) el.classList.add('active');
         }
 
-        function processRouteData(data) {
-            if (!data || !data.length) return;
+        // --- Helper Function to Normalize Raw / Processed Data ---
+        function normalizeRowData(row) {
+            var lat = row['LATITUDE'] || row['ละติจูด'] || row['latitude'] || row['lat'] || 0;
+            var lng = row['LONGITUDE'] || row['ลองจิจูด'] || row['longitude'] || row['lng'] || 0;
+            
+            var datetime = '';
+            if (row['DATE - TIME']) {
+                datetime = row['DATE - TIME'];
+            } else if (row['วันที่'] && row['เวลา']) {
+                datetime = row['วันที่'] + ' - ' + row['เวลา'];
+            } else if (row['วันที่']) {
+                datetime = row['วันที่'];
+            } else if (row['datetime']) {
+                datetime = row['datetime'];
+            }
 
-            routeData = data.sort(function(a, b) {
+            var camera = row['จุดติดตั้งกล้อง'] || row['ลำดับ - จุดติดตั้งกล้อง'] || row['สถานที่'] || row['camera_location'] || 'จุดตรวจ';
+            var carInfo = row['รายละเอียดรถ'] || (row['ทะเบียนรถ'] ? (row['ทะเบียนรถ'] + ' ' + (row['จังหวัด'] || '')) : 'รถยนต์');
+
+            return {
+                LATITUDE: parseFloat(lat),
+                LONGITUDE: parseFloat(lng),
+                "DATE - TIME": datetime,
+                "จุดติดตั้งกล้อง": camera,
+                "รายละเอียดรถ": carInfo
+            };
+        }
+
+        function processRouteData(rawData) {
+            if (!rawData || !rawData.length) return;
+
+            // Map and Normalize fields
+            var normalized = rawData.map(normalizeRowData).filter(function(d) {
+                return !isNaN(d.LATITUDE) && !isNaN(d.LONGITUDE) && d.LATITUDE !== 0 && d.LONGITUDE !== 0;
+            });
+
+            if (!normalized.length) {
+                alert("ไม่พบข้อมูลพิกัด (ละติจูด/ลองจิจูด) ในไฟล์");
+                return;
+            }
+
+            // Sort by Date & Time Ascending
+            routeData = normalized.sort(function(a, b) {
                 return new Date(a["DATE - TIME"]) - new Date(b["DATE - TIME"]);
             });
 
@@ -488,7 +527,7 @@
             if (carMarker) map.removeLayer(carMarker);
 
             var latLngs = routeData.map(function(d) { 
-                return [parseFloat(d.LATITUDE), parseFloat(d.LONGITUDE)]; 
+                return [d.LATITUDE, d.LONGITUDE]; 
             });
 
             pathPolyline = L.polyline(latLngs, {
@@ -511,7 +550,7 @@
                 div.className = "log-item " + (idx === 0 ? "active" : "");
                 div.onclick = function() { jumpToIndex(idx); };
                 div.innerHTML = '<div class="time"><i class="fa-regular fa-clock"></i> ' + (item["DATE - TIME"] || '') + '</div>' +
-                                '<div class="location"><i class="fa-solid fa-camera"></i> ' + (item["ลำดับ - จุดติดตั้งกล้อง"] || item["จุดติดตั้งกล้อง"] || 'จุดตรวจ') + '</div>';
+                                '<div class="location"><i class="fa-solid fa-camera"></i> ' + (item["จุดติดตั้งกล้อง"] || 'จุดตรวจ') + '</div>';
                 logList.appendChild(div);
             });
 
@@ -567,12 +606,12 @@
             var p1 = routeData[currentIndex];
             var p2 = routeData[currentIndex + 1];
 
-            var currentLat = parseFloat(p1.LATITUDE) + (parseFloat(p2.LATITUDE) - parseFloat(p1.LATITUDE)) * animProgress;
-            var currentLng = parseFloat(p1.LONGITUDE) + (parseFloat(p2.LONGITUDE) - parseFloat(p1.LONGITUDE)) * animProgress;
+            var currentLat = p1.LATITUDE + (p2.LATITUDE - p1.LATITUDE) * animProgress;
+            var currentLng = p1.LONGITUDE + (p2.LONGITUDE - p1.LONGITUDE) * animProgress;
 
             carMarker.setLatLng([currentLat, currentLng]);
 
-            var angle = Math.atan2(parseFloat(p2.LONGITUDE) - parseFloat(p1.LONGITUDE), parseFloat(p2.LATITUDE) - parseFloat(p1.LATITUDE)) * (180 / Math.PI);
+            var angle = Math.atan2(p2.LONGITUDE - p1.LONGITUDE, p2.LATITUDE - p1.LATITUDE) * (180 / Math.PI);
             if (car3DGroup) {
                 car3DGroup.rotation.y = angle * (Math.PI / 180);
             }
@@ -599,7 +638,7 @@
             animProgress = 0;
             document.getElementById('play-btn').innerHTML = '<i class="fa-solid fa-play"></i> เล่น';
             if (routeData.length > 0) {
-                carMarker.setLatLng([parseFloat(routeData[0].LATITUDE), parseFloat(routeData[0].LONGITUDE)]);
+                carMarker.setLatLng([routeData[0].LATITUDE, routeData[0].LONGITUDE]);
             }
             updateUI();
         }
@@ -622,8 +661,8 @@
             var p1 = routeData[currentIndex];
             var p2 = routeData[currentIndex + 1] || p1;
 
-            var currentLat = parseFloat(p1.LATITUDE) + (parseFloat(p2.LATITUDE) - parseFloat(p1.LATITUDE)) * animProgress;
-            var currentLng = parseFloat(p1.LONGITUDE) + (parseFloat(p2.LONGITUDE) - parseFloat(p1.LONGITUDE)) * animProgress;
+            var currentLat = p1.LATITUDE + (p2.LATITUDE - p1.LATITUDE) * animProgress;
+            var currentLng = p1.LONGITUDE + (p2.LONGITUDE - p1.LONGITUDE) * animProgress;
 
             carMarker.setLatLng([currentLat, currentLng]);
             updateUI();
@@ -633,8 +672,8 @@
             currentIndex = idx;
             animProgress = 0;
             var target = routeData[idx];
-            carMarker.setLatLng([parseFloat(target.LATITUDE), parseFloat(target.LONGITUDE)]);
-            map.panTo([parseFloat(target.LATITUDE), parseFloat(target.LONGITUDE)]);
+            carMarker.setLatLng([target.LATITUDE, target.LONGITUDE]);
+            map.panTo([target.LATITUDE, target.LONGITUDE]);
             updateUI();
         }
 
