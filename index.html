@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Vehicle Timeline Visualizer - 4ขฌ 2080 กทม</title>
+    <title>3D Vehicle Timeline Visualizer - OpenStreetMap & Leaflet</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Leaflet CSS & JS -->
+    <!-- Leaflet CSS & JS (Free OpenStreetMap library) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Three.js for 3D overlay -->
+    <!-- Three.js for 3D Vehicle Overlay -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- SheetJS (xlsx) -->
+    <!-- SheetJS for Excel / CSV Parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script>
@@ -23,17 +23,9 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#f0f9ff',
                             500: '#06b6d4',
                             600: '#0891b2',
                             700: '#0e7490',
-                            900: '#164e63',
-                        },
-                        dark: {
-                            bg: '#0b0f19',
-                            card: '#111827',
-                            border: '#1f293d',
-                            accent: '#06b6d4'
                         }
                     }
                 }
@@ -44,23 +36,22 @@
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
         body {
             font-family: 'Kanit', sans-serif;
-            background-color: #0b0f19;
+            background-color: #090d16;
             color: #f3f4f6;
             overflow: hidden;
         }
         #map {
             width: 100%;
             height: 100vh;
-            background: #0b0f19;
+            background: #090d16;
             z-index: 1;
         }
         .glass-panel {
-            background: rgba(17, 24, 39, 0.85);
+            background: rgba(15, 23, 42, 0.88);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -72,102 +63,109 @@
             background: #0891b2;
             border-radius: 4px;
         }
-        /* Pulse Animation */
         @keyframes radar-pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.2); opacity: 0.3; }
-            100% { transform: scale(0.95); opacity: 0.8; }
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 0.2; }
+            100% { transform: scale(0.9); opacity: 0.8; }
         }
         .radar-ring {
             animation: radar-pulse 2s infinite ease-in-out;
         }
-        /* Slider styling */
         input[type=range] {
             accent-color: #06b6d4;
         }
         .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-            background: #111827 !important;
+            background: #0f172a !important;
             color: #f3f4f6 !important;
             border: 1px solid #0891b2;
-            box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.3);
-            border-radius: 8px !important;
+            box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.4);
+            border-radius: 10px !important;
+        }
+        /* Dark filter overlay for OpenStreetMap Tiles to match tactical dark theme */
+        .osm-dark-tiles {
+            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
         }
     </style>
 </head>
 <body class="relative h-screen w-screen overflow-hidden select-none">
 
-    <!-- Top Header Bar -->
-    <header class="absolute top-0 left-0 right-0 z-20 p-4 pointer-events-none flex justify-between items-center">
-        <div class="pointer-events-auto flex items-center space-x-3 glass-panel px-4 py-2.5 rounded-xl shadow-2xl">
+    <!-- Top Navigation Bar -->
+    <header class="absolute top-0 left-0 right-0 z-20 p-3 sm:p-4 pointer-events-none flex justify-between items-center">
+        <div class="pointer-events-auto flex items-center space-x-3 glass-panel px-4 py-2 rounded-xl shadow-2xl">
             <div class="bg-gradient-to-tr from-cyan-500 to-blue-600 p-2.5 rounded-lg text-white shadow-lg shadow-cyan-500/30">
-                <i class="fa-solid font-bold fa-route text-xl"></i>
+                <i class="fa-solid fa-layer-group text-lg"></i>
             </div>
             <div>
-                <h1 class="text-lg font-bold bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
+                <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
                     3D Vehicle Timeline Visualizer
                 </h1>
-                <p class="text-xs text-slate-400 flex items-center gap-2">
+                <p class="text-[11px] text-slate-400 flex items-center gap-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    วิเคราะห์เส้นทางเคลื่อนที่ : <span id="vehicle-title-plate" class="text-cyan-300 font-medium">4ขฌ 2080 กทม</span>
+                    ทะเบียนเป้าหมาย: <span id="vehicle-title-plate" class="text-cyan-300 font-semibold">4ขฌ 2080 กรุงเทพมหานคร</span>
                 </p>
             </div>
         </div>
 
-        <div class="pointer-events-auto flex items-center space-x-3">
+        <div class="pointer-events-auto flex items-center space-x-2 sm:space-x-3">
             <!-- Upload Excel Button -->
-            <label for="excel-upload" class="cursor-pointer glass-panel hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 font-medium text-xs px-4 py-2.5 rounded-xl border border-cyan-500/30 transition-all flex items-center gap-2 shadow-lg">
+            <label for="excel-upload" class="cursor-pointer glass-panel hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 font-medium text-xs px-3.5 py-2.5 rounded-xl border border-cyan-500/40 transition-all flex items-center gap-2 shadow-lg">
                 <i class="fa-solid fa-file-excel text-emerald-400 text-sm"></i>
-                <span>นำเข้าไฟล์ Excel/CSV</span>
+                <span class="hidden sm:inline">อัปโหลดไฟล์ Excel/CSV</span>
                 <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" class="hidden" />
             </label>
 
+            <!-- GAS Setting Button -->
+            <button onclick="openGasModal()" class="glass-panel p-2.5 text-slate-300 hover:text-cyan-300 rounded-xl border border-slate-700/60 shadow-lg" title="เชื่อมต่อ Google Apps Script API">
+                <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+            </button>
+
             <!-- Toggle Panel Button -->
-            <button id="toggle-sidebar-btn" onclick="toggleSidebar()" class="glass-panel p-2.5 text-slate-300 hover:text-white rounded-xl border border-slate-700/50 shadow-lg">
-                <i class="fa-solid fa-list-ul text-sm"></i>
+            <button id="toggle-sidebar-btn" onclick="toggleSidebar()" class="glass-panel p-2.5 text-slate-300 hover:text-white rounded-xl border border-slate-700/60 shadow-lg">
+                <i class="fa-solid fa-bars-staggered text-sm"></i>
             </button>
         </div>
     </header>
 
-    <!-- Main Map Area -->
+    <!-- Main Map Viewport (OpenStreetMap + Leaflet) -->
     <div id="map"></div>
 
-    <!-- Floating Dashboard Summary Panel (Top Left overlay) -->
-    <div class="absolute top-20 left-4 z-10 glass-panel p-4 rounded-xl w-72 shadow-2xl border border-slate-800 space-y-3">
+    <!-- Summary Stats Panel (Top Left) -->
+    <div class="absolute top-20 left-4 z-10 glass-panel p-3.5 rounded-xl w-72 shadow-2xl border border-slate-800 space-y-3 hidden sm:block">
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">ข้อมูลสรุปการเดินทาง</span>
-            <span id="data-status-badge" class="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-700 px-2 py-0.5 rounded-full font-mono">
-                Sample Loaded
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ข้อมูลการสืบสวน/วิเคราะห์</span>
+            <span id="data-status-badge" class="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full font-mono">
+                Sample Data
             </span>
         </div>
         
         <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                <span class="text-slate-400 block text-[10px]">จำนวนจุดตรวจ</span>
+            <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                <span class="text-slate-400 block text-[10px]">จำนวนจุดตรวจ (ANPR)</span>
                 <span id="stat-points-count" class="text-base font-bold text-cyan-400">0</span>
-                <span class="text-[10px] text-slate-500"> จุดกล้อง</span>
+                <span class="text-[10px] text-slate-500"> จุด</span>
             </div>
-            <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                <span class="text-slate-400 block text-[10px]">ระยะทางรวมโดยประมาณ</span>
+            <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800">
+                <span class="text-slate-400 block text-[10px]">ระยะทางรวม</span>
                 <span id="stat-total-dist" class="text-base font-bold text-emerald-400">0</span>
                 <span class="text-[10px] text-slate-500"> กม.</span>
             </div>
-            <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 col-span-2">
-                <span class="text-slate-400 block text-[10px]">ช่วงเวลาเดินทาง</span>
-                <div id="stat-time-range" class="text-xs font-mono text-slate-200 truncate mt-0.5">-</div>
+            <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800 col-span-2">
+                <span class="text-slate-400 block text-[10px]">กรอบเวลาเดินทาง</span>
+                <div id="stat-time-range" class="text-[11px] font-mono text-slate-200 truncate mt-0.5">-</div>
             </div>
         </div>
 
-        <!-- Current Active Location Box -->
-        <div class="bg-cyan-950/40 p-3 rounded-lg border border-cyan-800/40">
+        <!-- Active Location Status -->
+        <div class="bg-cyan-950/50 p-3 rounded-lg border border-cyan-800/50">
             <div class="flex items-center justify-between text-[11px] text-cyan-400 font-semibold mb-1">
-                <span class="flex items-center gap-1.5"><i class="fa-solid fa-location-dot"></i> ตำแหน่งปัจจุบัน</span>
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-location-crosshairs"></i> ตำแหน่งจำลอง</span>
                 <span id="current-speed-tag" class="font-mono text-emerald-400">0 km/h</span>
             </div>
             <div id="current-location-name" class="text-xs font-medium text-slate-200 line-clamp-2">
-                กำลังรอเริ่มการแอนิเมชัน...
+                พร้อมเริ่มการเคลื่อนที่...
             </div>
-            <div id="current-location-time" class="text-[11px] font-mono text-slate-400 mt-1">
-                --/--/---- --:--:--
+            <div id="current-location-coords" class="text-[10px] font-mono text-slate-400 mt-1">
+                Lat: 0.00000 | Lng: 0.00000
             </div>
         </div>
     </div>
@@ -176,65 +174,63 @@
     <aside id="sidebar-logs" class="absolute top-20 right-4 bottom-28 z-10 w-80 glass-panel rounded-xl shadow-2xl border border-slate-800 flex flex-col transition-all duration-300">
         <div class="p-3 border-b border-slate-800 flex items-center justify-between">
             <h3 class="text-xs font-bold text-slate-200 flex items-center gap-2">
-                <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i>
-                รายการผ่านจุดตรวจ (Timeline Logs)
+                <i class="fa-solid fa-list-check text-cyan-400"></i>
+                ประวัติจุดตรวจ ANPR (Camera Logs)
             </h3>
             <span id="log-count-badge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">0 Log</span>
         </div>
 
         <div id="timeline-log-list" class="flex-1 overflow-y-auto p-2 space-y-2 text-xs">
-            <!-- Log items inserted dynamically -->
+            <!-- Dynamic Items -->
         </div>
     </aside>
 
-    <!-- Bottom Floating Timeline Player Controls -->
-    <div class="absolute bottom-4 left-4 right-4 z-20 glass-panel p-4 rounded-2xl shadow-2xl border border-slate-800 max-w-5xl mx-auto space-y-3">
-        <!-- Progress Bar & Slider -->
+    <!-- Bottom Timeline Player Controls -->
+    <div class="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-20 glass-panel p-3 sm:p-4 rounded-2xl shadow-2xl border border-slate-800 max-w-5xl mx-auto space-y-2.5">
+        <!-- Seekbar Progress Header -->
         <div class="space-y-1">
             <div class="flex justify-between text-xs text-slate-400 font-mono">
                 <span id="time-display-start">00:00:00</span>
-                <span id="time-display-current" class="text-cyan-400 font-bold text-sm bg-cyan-950/80 px-3 py-0.5 rounded-md border border-cyan-800/60">
+                <span id="time-display-current" class="text-cyan-300 font-bold text-xs sm:text-sm bg-cyan-950/90 px-3 py-0.5 rounded-md border border-cyan-800">
                     --/--/---- --:--:--
                 </span>
                 <span id="time-display-end">00:00:00</span>
             </div>
-            <div class="relative flex items-center">
-                <input type="range" id="timeline-seekbar" min="0" max="100" value="0" step="0.01"
-                       class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer focus:outline-none">
-            </div>
+            <input type="range" id="timeline-seekbar" min="0" max="100" value="0" step="0.01"
+                   class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer focus:outline-none">
         </div>
 
         <!-- Controls Row -->
         <div class="flex items-center justify-between pt-1">
             <!-- Left Info -->
             <div class="flex items-center space-x-2 text-xs text-slate-400">
-                <i class="fa-solid fa-car text-cyan-400 text-sm"></i>
-                <span id="vehicle-sub-info" class="hidden sm:inline font-mono">TOYOTA / SILVER</span>
+                <i class="fa-solid fa-map-pin text-cyan-400"></i>
+                <span id="vehicle-sub-info" class="hidden md:inline font-mono text-[11px]">OpenStreetMap + Leaflet.js</span>
             </div>
 
-            <!-- Center Controls -->
-            <div class="flex items-center space-x-3">
-                <button onclick="resetPlayback()" class="p-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="เริ่มใหม่">
-                    <i class="fa-solid fa-rotate-left text-sm"></i>
+            <!-- Center Buttons -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="resetPlayback()" class="p-2 sm:p-2.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="เริ่มใหม่">
+                    <i class="fa-solid fa-rotate-left text-xs sm:text-sm"></i>
                 </button>
-                <button onclick="stepBackward()" class="p-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="ย้อนกลับ 1 จุด">
-                    <i class="fa-solid fa-backward-step text-sm"></i>
+                <button onclick="stepBackward()" class="p-2 sm:p-2.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="ย้อนกลับ 1 จุด">
+                    <i class="fa-solid fa-backward-step text-xs sm:text-sm"></i>
                 </button>
-                <button id="btn-play-pause" onclick="togglePlayPause()" class="w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/40 flex items-center justify-center text-lg transition transform active:scale-95">
+                <button id="btn-play-pause" onclick="togglePlayPause()" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/40 flex items-center justify-center text-sm sm:text-lg transition transform active:scale-95">
                     <i id="play-icon" class="fa-solid fa-play ml-0.5"></i>
                 </button>
-                <button onclick="stepForward()" class="p-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="ข้ามไป 1 จุด">
-                    <i class="fa-solid fa-forward-step text-sm"></i>
+                <button onclick="stepForward()" class="p-2 sm:p-2.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="ข้ามไป 1 จุด">
+                    <i class="fa-solid fa-forward-step text-xs sm:text-sm"></i>
                 </button>
-                <button onclick="toggleFollowCar()" id="btn-follow-car" class="p-2.5 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-400 hover:bg-cyan-900 transition" title="ล็อกมุมกล้องตามรถ">
-                    <i class="fa-solid fa-video text-sm"></i>
+                <button onclick="toggleFollowCar()" id="btn-follow-car" class="p-2 sm:p-2.5 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-400 hover:bg-cyan-900 transition" title="ล็อกมุมกล้องติดตามรถ">
+                    <i class="fa-solid fa-video text-xs sm:text-sm"></i>
                 </button>
             </div>
 
-            <!-- Right Speed Selection -->
-            <div class="flex items-center space-x-2">
-                <span class="text-xs text-slate-400 font-medium hidden md:inline"><i class="fa-solid fa-gauge-high text-cyan-400 mr-1"></i>ความเร็ว:</span>
-                <select id="speed-selector" onchange="changeSpeed(this.value)" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 font-mono cursor-pointer">
+            <!-- Right Speed Selector -->
+            <div class="flex items-center space-x-1.5">
+                <span class="text-xs text-slate-400 font-medium hidden lg:inline"><i class="fa-solid fa-gauge-high text-cyan-400 mr-1"></i>ความเร็ว:</span>
+                <select id="speed-selector" onchange="changeSpeed(this.value)" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs rounded-lg px-2 py-1 focus:outline-none font-mono cursor-pointer">
                     <option value="0.25">0.25x (Slow)</option>
                     <option value="0.5">0.5x</option>
                     <option value="1" selected>1.0x (ปกติ)</option>
@@ -246,19 +242,47 @@
         </div>
     </div>
 
-    <!-- JavaScript Application Logic -->
+    <!-- Google Apps Script Modal Settings -->
+    <div id="gas-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 rounded-2xl w-full max-w-lg border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    ตั้งค่า Google Apps Script Web App API
+                </h3>
+                <button onclick="closeGasModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                ใส่ Web App Executable URL จาก Google Apps Script ที่ Deploy ไว้ เพื่อซิงก์ข้อมูลอ่าน/บันทึกผลการวิเคราะห์กับ Google Sheets ฟรี:
+            </p>
+            <div>
+                <label class="block text-[11px] text-slate-400 mb-1 font-mono">GAS Web App URL:</label>
+                <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-500 font-mono">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="syncWithGAS()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrows-rotate"></i> ดึงข้อมูลจาก GAS
+                </button>
+                <button onclick="saveGasUrl()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium px-4 py-2 rounded-lg transition">
+                    บันทึกการตั้งค่า
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Default Sample Data (Based on 4ขฌ 2080 กทม dataset)
+        // Default Sample Data (4ขฌ 2080 กรุงเทพมหานคร)
         const DEFAULT_DATA = [
-            { id: 1, plate: "4ขฌ 2080 กทม", lat: 13.7563, lng: 100.5018, datetime: "2024-03-01 08:10:00", camera: "จุดตรวจ 01 - ด่านดอนเมือง Outbound", province: "กรุงเทพมหานคร" },
-            { id: 2, plate: "4ขฌ 2080 กทม", lat: 13.9823, lng: 100.6120, datetime: "2024-03-01 08:35:12", camera: "จุดตรวจ 02 - รังสิต-ปทุมธานี", province: "ปทุมธานี" },
-            { id: 3, plate: "4ขฌ 2080 กทม", lat: 14.1802, lng: 100.6150, datetime: "2024-03-01 08:58:30", camera: "จุดตรวจ 03 - นวนคร กม.46", province: "ปทุมธานี" },
-            { id: 4, plate: "4ขฌ 2080 กทม", lat: 14.3532, lng: 100.5750, datetime: "2024-03-01 09:22:15", camera: "จุดตรวจ 04 - บางปะอิน มิตรภาพ", province: "พระนครศรีอยุธยา" },
-            { id: 5, plate: "4ขฌ 2080 กทม", lat: 14.5280, lng: 100.9110, datetime: "2024-03-01 09:55:40", camera: "จุดตรวจ 05 - สระบุรี มิตรภาพ KM 12", province: "สระบุรี" },
-            { id: 6, plate: "4ขฌ 2080 กทม", lat: 14.6850, lng: 101.1200, datetime: "2024-03-01 10:25:00", camera: "จุดตรวจ 06 - มวกเหล็ก ทางหลวง 2", province: "สระบุรี" },
-            { id: 7, plate: "4ขฌ 2080 กทม", lat: 14.6100, lng: 101.4100, datetime: "2024-03-01 10:50:20", camera: "จุดตรวจ 07 - ปากช่อง นครราชสีมา", province: "นครราชสีมา" },
-            { id: 8, plate: "4ขฌ 2080 กทม", lat: 14.8700, lng: 101.8300, datetime: "2024-03-01 11:30:45", camera: "จุดตรวจ 08 - สีคิ้ว ชัยภูมิ-ขอนแก่น", province: "นครราชสีมา" },
-            { id: 9, plate: "4ขฌ 2080 กทม", lat: 14.9750, lng: 102.0980, datetime: "2024-03-01 12:05:10", camera: "จุดตรวจ 09 - เมืองนครราชสีมา บายพาส", province: "นครราชสีมา" }
+            { id: 1, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 13.7563, lng: 100.5018, datetime: "2024-03-01 08:10:00", camera: "จุดตรวจ 01 - ด่านดอนเมือง Outbound", province: "กรุงเทพมหานคร" },
+            { id: 2, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 13.9823, lng: 100.6120, datetime: "2024-03-01 08:35:12", camera: "จุดตรวจ 02 - รังสิต-ปทุมธานี", province: "ปทุมธานี" },
+            { id: 3, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 14.1802, lng: 100.6150, datetime: "2024-03-01 08:58:30", camera: "จุดตรวจ 03 - นวนคร กม.46", province: "ปทุมธานี" },
+            { id: 4, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 14.3532, lng: 100.5750, datetime: "2024-03-01 09:22:15", camera: "จุดตรวจ 04 - บางปะอิน มิตรภาพ", province: "พระนครศรีอยุธยา" },
+            { id: 5, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 14.5280, lng: 100.9110, datetime: "2024-03-01 09:55:40", camera: "จุดตรวจ 05 - สระบุรี มิตรภาพ KM 12", province: "สระบุรี" },
+            { id: 6, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 14.6850, lng: 101.1200, datetime: "2024-03-01 10:25:00", camera: "จุดตรวจ 06 - มวกเหล็ก ทางหลวง 2", province: "สระบุรี" },
+            { id: 7, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 14.6100, lng: 101.4100, datetime: "2024-03-01 10:50:20", camera: "จุดตรวจ 07 - ปากช่อง นครราชสีมา", province: "นครราชสีมา" },
+            { id: 8, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 14.8700, lng: 101.8300, datetime: "2024-03-01 11:30:45", camera: "จุดตรวจ 08 - สีคิ้ว ชัยภูมิ-ขอนแก่น", province: "นครราชสีมา" },
+            { id: 9, plate: "4ขฌ 2080 กรุงเทพมหานคร", lat: 14.9750, lng: 102.0980, datetime: "2024-03-01 12:05:10", camera: "จุดตรวจ 09 - เมืองนครราชสีมา บายพาส", province: "นครราชสีมา" }
         ];
 
         // Global States
@@ -275,37 +299,45 @@
         let playbackSpeed = 1.0; 
         let animationFrameId = null;
         let lastTimestamp = null;
-        const BASE_DURATION_SEC = 25; // 25 seconds full trip duration at 1x speed
+        const BASE_DURATION_SEC = 25; 
 
-        // Three.js 3D Canvas Overlay Element Inside Leaflet Marker
+        // Three.js Overlay Variables
         let threeScene, threeCamera, threeRenderer, carMesh;
 
-        // Initialize App on DOM Ready
+        // On DOM Load
         window.onload = function() {
-            initMap();
+            initLeafletMap();
             loadDataset(DEFAULT_DATA);
             setupEvents();
             animateLoop(performance.now());
+            
+            // Load saved GAS URL if exists
+            const savedGasUrl = localStorage.getItem('gas_app_url');
+            if (savedGasUrl) {
+                document.getElementById('gas-url-input').value = savedGasUrl;
+            }
         };
 
-        // Initialize Map
-        function initMap() {
-            // Dark Tile Layer (CartoDB Dark Matter)
+        // Initialize 100% Free OpenStreetMap via Leaflet
+        function initLeafletMap() {
             map = L.map('map', {
                 center: [14.2, 101.0],
                 zoom: 9,
                 zoomControl: false
             });
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 19
+            // Standard Free OpenStreetMap Tile Layer
+            const osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
             }).addTo(map);
+
+            // Apply dark tactical theme filter to OSM tiles
+            osmTileLayer.getContainer().classList.add('osm-dark-tiles');
 
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // Polyline layers
+            // Route Polylines
             polylinePath = L.polyline([], {
                 color: '#0891b2',
                 weight: 4,
@@ -316,13 +348,12 @@
             passedPolylinePath = L.polyline([], {
                 color: '#06b6d4',
                 weight: 6,
-                opacity: 0.9
+                opacity: 0.95
             }).addTo(map);
         }
 
-        // Process and Load Dataset
+        // Process & Load Dataset
         function loadDataset(rawData) {
-            // Sort data by Date-Time ascending
             timelineData = rawData.map(item => {
                 const dateObj = new Date(item.datetime);
                 return {
@@ -335,7 +366,7 @@
 
             if (timelineData.length === 0) return;
 
-            // Calculate Distance and Stats
+            // Compute total distance
             totalDistanceKm = 0;
             for (let i = 0; i < timelineData.length - 1; i++) {
                 totalDistanceKm += calculateHaversineDistance(
@@ -347,30 +378,28 @@
             // Update UI Stats
             document.getElementById('stat-points-count').innerText = timelineData.length;
             document.getElementById('stat-total-dist').innerText = totalDistanceKm.toFixed(1);
-            document.getElementById('vehicle-title-plate').innerText = timelineData[0].plate || "4ขฌ 2080 กทม";
+            document.getElementById('vehicle-title-plate').innerText = timelineData[0].plate || "4ขฌ 2080 กรุงเทพมหานคร";
             document.getElementById('stat-time-range').innerText = `${timelineData[0].datetime} - ${timelineData[timelineData.length-1].datetime.split(' ')[1] || ''}`;
             document.getElementById('log-count-badge').innerText = `${timelineData.length} จุดตรวจ`;
 
-            // Draw Camera Markers & Polyline
+            // Draw Camera Pins & Sidebar Logs
             renderCameraMarkers();
             renderTimelineLogs();
 
-            // Set Map view bounds
+            // Set map bounds
             const latLngs = timelineData.map(d => [d.lat, d.lng]);
             polylinePath.setLatLngs(latLngs);
-            map.fitBounds(polylinePath.getBounds(), { padding: [80, 80] });
+            map.fitBounds(polylinePath.getBounds(), { padding: [70, 70] });
 
             // Create 3D Car Marker
             create3DCarMarker(latLngs[0]);
 
-            // Reset Animation
             progress = 0;
             updateAnimationState(0);
         }
 
-        // Render Camera Pins
+        // Render Camera Pins on Map
         function renderCameraMarkers() {
-            // Clear old
             cameraMarkers.forEach(m => map.removeLayer(m));
             cameraMarkers = [];
 
@@ -391,9 +420,8 @@
 
                 const marker = L.marker([point.lat, point.lng], { icon: customIcon }).addTo(map);
                 
-                // Popup HTML
                 const popupContent = `
-                    <div class="p-1 space-y-1 text-xs">
+                    <div class="p-1.5 space-y-1 text-xs">
                         <div class="font-bold text-cyan-400 border-b border-slate-700 pb-1 flex items-center gap-1.5">
                             <i class="fa-solid fa-camera"></i> ${point.camera}
                         </div>
@@ -431,16 +459,15 @@
             });
         }
 
-        // Initialize 3D Three.js Car Marker inside Leaflet Marker
+        // Create Three.js 3D Vehicle Overlay Canvas Inside Leaflet Marker
         function create3DCarMarker(initialLatLng) {
             if (carMarker) {
                 map.removeLayer(carMarker);
             }
 
-            // Create HTML Container for Three.js
             const container = document.createElement('div');
-            container.style.width = '60px';
-            container.style.height = '60px';
+            container.style.width = '64px';
+            container.style.height = '64px';
             container.className = 'relative flex items-center justify-center';
 
             // Setup Three.js Scene
@@ -450,29 +477,28 @@
             threeCamera.lookAt(0, 0, 0);
 
             threeRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            threeRenderer.setSize(60, 60);
-            threeRenderer.shadowMap.enabled = true;
+            threeRenderer.setSize(64, 64);
             container.appendChild(threeRenderer.domElement);
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            // Lightings
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
             threeScene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0x06b6d4, 1.5);
+            const dirLight = new THREE.DirectionalLight(0x06b6d4, 1.8);
             dirLight.position.set(10, 20, 10);
             threeScene.add(dirLight);
 
-            // Construct Stylized 3D Car Model Group
+            // Construct 3D Car Model Mesh
             carMesh = new THREE.Group();
 
-            // Car Body
+            // Body
             const bodyGeo = new THREE.BoxGeometry(6, 2.2, 12);
-            const bodyMat = new THREE.MeshPhongMaterial({ color: 0x0891b2, shininess: 90 });
+            const bodyMat = new THREE.MeshPhongMaterial({ color: 0x0891b2, shininess: 100 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 1.5;
             carMesh.add(body);
 
-            // Car Cabin Top
+            // Cabin
             const cabinGeo = new THREE.BoxGeometry(4.8, 1.8, 6);
             const cabinMat = new THREE.MeshPhongMaterial({ color: 0x0f172a, shininess: 100 });
             const cabin = new THREE.Mesh(cabinGeo, cabinMat);
@@ -489,7 +515,7 @@
             carMesh.add(lightL);
             carMesh.add(lightR);
 
-            // Hologram Light Aura Ring beneath car
+            // Aura Ring Ground
             const ringGeo = new THREE.RingGeometry(5, 7, 32);
             const ringMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
             const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -499,25 +525,23 @@
 
             threeScene.add(carMesh);
 
-            // Custom Leaflet Marker holding 3D canvas
             const carIcon = L.divIcon({
                 className: 'car-3d-marker',
                 html: container,
-                iconSize: [60, 60],
-                iconAnchor: [30, 30]
+                iconSize: [64, 64],
+                iconAnchor: [32, 32]
             });
 
             carMarker = L.marker(initialLatLng, { icon: carIcon }).addTo(map);
         }
 
-        // Animation Loop (Render frame)
+        // Animation Loop
         function animateLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             const deltaTime = (timestamp - lastTimestamp) / 1000;
             lastTimestamp = timestamp;
 
             if (isPlaying && timelineData.length > 1) {
-                // Advance progress based on duration & speed multiplier
                 const increment = (deltaTime / BASE_DURATION_SEC) * playbackSpeed;
                 progress += increment;
 
@@ -530,10 +554,9 @@
                 updateAnimationState(progress);
             }
 
-            // Render Three.js 3D Car scene
             if (threeRenderer && threeScene && threeCamera) {
                 if (carMesh) {
-                    carMesh.rotation.y += 0.01; // Continuous subtle aura rotation
+                    carMesh.rotation.y += 0.01;
                 }
                 threeRenderer.render(threeScene, threeCamera);
             }
@@ -541,11 +564,10 @@
             animationFrameId = requestAnimationFrame(animateLoop);
         }
 
-        // Update Animation Position, Rotation, Stats and Map Lines
+        // Update Animation Frame State
         function updateAnimationState(p) {
             if (timelineData.length < 2) return;
 
-            // Compute current interpolated point along the trajectory
             const totalSegments = timelineData.length - 1;
             const scaledProgress = p * totalSegments;
             const segmentIndex = Math.min(Math.floor(scaledProgress), totalSegments - 1);
@@ -554,74 +576,62 @@
             const p1 = timelineData[segmentIndex];
             const p2 = timelineData[segmentIndex + 1] || p1;
 
-            // Interpolated Lat/Lng
             const currentLat = p1.lat + (p2.lat - p1.lat) * segmentProgress;
             const currentLng = p1.lng + (p2.lng - p1.lng) * segmentProgress;
             const currentPos = [currentLat, currentLng];
 
-            // Heading Angle (Degrees)
             const headingAngle = calculateHeading(p1.lat, p1.lng, p2.lat, p2.lng);
 
-            // Move Car Marker
             if (carMarker) {
                 carMarker.setLatLng(currentPos);
-                
-                // Rotate 3D mesh model according to heading direction
                 if (carMesh) {
                     carMesh.rotation.z = -(headingAngle * Math.PI / 180);
                 }
             }
 
-            // Camera follow car
             if (followCar) {
                 map.panTo(currentPos, { animate: false });
             }
 
-            // Update Passed Polyline Path
             const passedPoints = timelineData.slice(0, segmentIndex + 1).map(d => [d.lat, d.lng]);
             passedPoints.push(currentPos);
             passedPolylinePath.setLatLngs(passedPoints);
 
-            // Calculate Interpolated Timestamp
             const currentTimestamp = p1.timestamp + (p2.timestamp - p1.timestamp) * segmentProgress;
             const currentDateStr = formatDate(new Date(currentTimestamp));
 
-            // Estimate Current Speed between segment points
             const segmentDistance = calculateHaversineDistance(p1.lat, p1.lng, p2.lat, p2.lng);
             const segmentTimeHours = Math.max((p2.timestamp - p1.timestamp) / (1000 * 3600), 0.0001);
             const currentSpeed = Math.min(Math.round(segmentDistance / segmentTimeHours), 140);
 
-            // Update UI Displays
+            // UI Updates
             document.getElementById('time-display-current').innerText = currentDateStr;
             document.getElementById('current-location-name').innerText = p1.camera;
-            document.getElementById('current-location-time').innerText = currentDateStr;
+            document.getElementById('current-location-coords').innerText = `Lat: ${currentLat.toFixed(5)} | Lng: ${currentLng.toFixed(5)}`;
             document.getElementById('current-speed-tag').innerText = `${currentSpeed} km/h`;
             document.getElementById('timeline-seekbar').value = p * 100;
 
             document.getElementById('time-display-start').innerText = timelineData[0].datetime.split(' ')[1] || '';
             document.getElementById('time-display-end').innerText = timelineData[timelineData.length-1].datetime.split(' ')[1] || '';
 
-            // Highlight Active Log Entry in Sidebar
             highlightActiveLogCard(segmentIndex);
         }
 
-        // Highlight Active Log Card
         function highlightActiveLogCard(index) {
             timelineData.forEach((_, i) => {
                 const el = document.getElementById(`log-card-${i}`);
                 if (el) {
                     if (i === index) {
-                        el.classList.add('border-cyan-500', 'bg-cyan-950/60', 'ring-1', 'ring-cyan-500/50');
+                        el.classList.add('border-cyan-500', 'bg-cyan-950/70', 'ring-1', 'ring-cyan-500/50');
                         el.classList.remove('border-slate-800', 'bg-slate-900/60');
                     } else {
-                        el.classList.remove('border-cyan-500', 'bg-cyan-950/60', 'ring-1', 'ring-cyan-500/50');
+                        el.classList.remove('border-cyan-500', 'bg-cyan-950/70', 'ring-1', 'ring-cyan-500/50');
                         el.classList.add('border-slate-800', 'bg-slate-900/60');
                     }
                 }
             });
         }
 
-        // Jump directly to specific log index
         function jumpToLogIndex(index) {
             if (timelineData.length < 2) return;
             progress = index / (timelineData.length - 1);
@@ -631,22 +641,15 @@
             }
         }
 
-        // Controls Logic
         function togglePlayPause() {
             isPlaying = !isPlaying;
-            if (isPlaying && progress >= 1) {
-                progress = 0; // Restart if played to end
-            }
+            if (isPlaying && progress >= 1) progress = 0;
             updatePlayButtonUI();
         }
 
         function updatePlayButtonUI() {
             const icon = document.getElementById('play-icon');
-            if (isPlaying) {
-                icon.className = 'fa-solid fa-pause';
-            } else {
-                icon.className = 'fa-solid fa-play ml-0.5';
-            }
+            icon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play ml-0.5';
         }
 
         function resetPlayback() {
@@ -655,7 +658,7 @@
             updatePlayButtonUI();
             updateAnimationState(0);
             if (timelineData.length > 0) {
-                map.fitBounds(polylinePath.getBounds(), { padding: [80, 80] });
+                map.fitBounds(polylinePath.getBounds(), { padding: [70, 70] });
             }
         }
 
@@ -680,32 +683,24 @@
         function toggleFollowCar() {
             followCar = !followCar;
             const btn = document.getElementById('btn-follow-car');
-            if (followCar) {
-                btn.className = "p-2.5 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-400 hover:bg-cyan-900 transition";
-            } else {
-                btn.className = "p-2.5 rounded-full bg-slate-800/80 border border-slate-700 text-slate-400 hover:text-white transition";
-            }
+            btn.className = followCar 
+                ? "p-2 sm:p-2.5 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-400 hover:bg-cyan-900 transition"
+                : "p-2 sm:p-2.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition";
         }
 
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar-logs');
-            sidebar.classList.toggle('hidden');
+            document.getElementById('sidebar-logs').classList.toggle('hidden');
         }
 
-        // Event Setup
         function setupEvents() {
-            // Seekbar Input Event
-            const seekbar = document.getElementById('timeline-seekbar');
-            seekbar.addEventListener('input', (e) => {
+            document.getElementById('timeline-seekbar').addEventListener('input', (e) => {
                 progress = parseFloat(e.target.value) / 100;
                 updateAnimationState(progress);
             });
-
-            // Excel File Upload Event Listener
             document.getElementById('excel-upload').addEventListener('change', handleFileUpload);
         }
 
-        // Excel / CSV File Parsing Handler
+        // Handle Excel / CSV File Upload
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -715,16 +710,14 @@
                 try {
                     const data = new Uint8Array(evt.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet);
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet);
 
                     if (!json || json.length === 0) {
-                        alert('ไม่พบข้อมูลในไฟล์ Excel');
+                        alert('ไม่พบข้อมูลในไฟล์');
                         return;
                     }
 
-                    // Map Excel Column Names automatically
                     const parsedData = json.map((row, idx) => {
                         const getVal = (keys) => {
                             for (let k of keys) {
@@ -753,44 +746,76 @@
                     }).filter(item => !isNaN(item.lat) && !isNaN(item.lng));
 
                     if (parsedData.length < 2) {
-                        alert('ไฟล์ต้องมีข้อมูลพิกัด (LATITUDE, LONGITUDE) อย่างน้อย 2 จุดเพื่อสร้างแอนิเมชันเส้นทาง');
+                        alert('ไฟล์ต้องมีข้อมูลพิกัด (LATITUDE, LONGITUDE) อย่างน้อย 2 จุด');
                         return;
                     }
 
-                    document.getElementById('data-status-badge').innerText = 'Custom File Loaded';
+                    document.getElementById('data-status-badge').innerText = 'Custom File';
                     loadDataset(parsedData);
 
                 } catch (err) {
-                    console.error(err);
-                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel: ' + err.message);
+                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์: ' + err.message);
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // Helper: Calculate Distance between Lat/Lng in KM (Haversine Formula)
+        // Google Apps Script Modal Handlers
+        function openGasModal() {
+            document.getElementById('gas-modal').classList.remove('hidden');
+        }
+
+        function closeGasModal() {
+            document.getElementById('gas-modal').classList.add('hidden');
+        }
+
+        function saveGasUrl() {
+            const url = document.getElementById('gas-url-input').value.trim();
+            localStorage.setItem('gas_app_url', url);
+            alert('บันทึกการตั้งค่า GAS Web App URL เรียบร้อยแล้ว');
+            closeGasModal();
+        }
+
+        function syncWithGAS() {
+            const url = document.getElementById('gas-url-input').value.trim();
+            if (!url) {
+                alert('กรุณากรอก GAS Web App URL');
+                return;
+            }
+            
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        document.getElementById('data-status-badge').innerText = 'GAS Synced';
+                        loadDataset(data);
+                        closeGasModal();
+                    } else {
+                        alert('ไม่พบชุดข้อมูลจาก Google Apps Script');
+                    }
+                })
+                .catch(err => alert('เชื่อมต่อ Google Apps Script ไม่สำเร็จ: ' + err.message));
+        }
+
+        // Distance & Bearing Math Helpers
         function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radius of Earth in km
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                       Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        // Helper: Calculate Heading Bearing Angle in Degrees
         function calculateHeading(lat1, lon1, lat2, lon2) {
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
             const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
                       Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
-            const brng = Math.atan2(y, x) * 180 / Math.PI;
-            return (brng + 360) % 360;
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
 
-        // Helper: Format Date
         function formatDate(date) {
             if (isNaN(date.getTime())) return '--/--/---- --:--:--';
             const pad = (n) => String(n).padStart(2, '0');
