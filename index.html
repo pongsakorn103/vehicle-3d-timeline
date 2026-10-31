@@ -217,6 +217,22 @@
             font-size: 0.85rem;
         }
 
+        /* Moving Car Label Badge */
+        .car-badge {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--accent);
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
         /* Sidebar Log */
         .sidebar {
             position: absolute;
@@ -321,7 +337,7 @@
         <i class="fa-solid fa-car-side" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i>
         <h2 style="margin-bottom: 10px; font-weight: 600;">3D Vehicle Timeline</h2>
         <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px;">
-            แสดงผลเส้นทางแอนิเมชัน 3D เรียงลำดับจากล่าสุดไปอดีต
+            แสดงเส้นทางแอนิเมชัน 3D เรียงจากเวลาอดีต -> ปัจจุบัน พร้อมป้ายทะเบียนเคลื่อนที่
         </p>
         <div style="display: flex; gap: 10px; justify-content: center;">
             <button class="btn" onclick="triggerFileInput()">
@@ -364,7 +380,7 @@
     <!-- Sidebar Log -->
     <div class="sidebar collapsed" id="sidebar">
         <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 0.9rem;">
-            <span><i class="fa-solid fa-list-check" style="color: var(--accent);"></i> ประวัติผ่านจุดตรวจ (ล่าสุด -> อดีต)</span>
+            <span><i class="fa-solid fa-list-check" style="color: var(--accent);"></i> ประวัติผ่านจุดตรวจ (อดีต -> ล่าสุด)</span>
             <span id="total-count" style="font-size: 0.75rem; color: var(--text-sub);">0 จุด</span>
         </div>
         <div class="log-list" id="log-list"></div>
@@ -385,12 +401,12 @@
         var carMarker = null;
 
         var sampleExcelData = [
-            { "ลำดับ": 1, "DATE - TIME": "2026/10/29 - 11:40:24", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "ถนนรัชดาภิเษก มุ่งหน้าอโศก", "LATITUDE": 13.756621, "LONGITUDE": 100.565240 },
-            { "ลำดับ": 2, "DATE - TIME": "2026/10/29 - 09:34:23", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "DonMueang_Amari", "LATITUDE": 13.942811, "LONGITUDE": 100.608709 },
-            { "ลำดับ": 3, "DATE - TIME": "2026/10/29 - 09:13:26", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "จุดกลับรถวันครู_ขาเข้า", "LATITUDE": 14.100140, "LONGITUDE": 100.618750 },
-            { "ลำดับ": 4, "DATE - TIME": "2026/10/29 - 08:57:18", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "บางปะอิน_ขาเข้า", "LATITUDE": 14.270696, "LONGITUDE": 100.613489 },
+            { "ลำดับ": 6, "DATE - TIME": "2026/10/29 - 07:51:05", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "แยกปากบางบางงา_เข้า", "LATITUDE": 14.848605, "LONGITUDE": 100.444330 },
             { "ลำดับ": 5, "DATE - TIME": "2026/10/29 - 08:18:59", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "มหาราช_ขาเข้า", "LATITUDE": 14.541224, "LONGITUDE": 100.502318 },
-            { "ลำดับ": 6, "DATE - TIME": "2026/10/29 - 07:51:05", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "แยกปากบางบางงา_เข้า", "LATITUDE": 14.848605, "LONGITUDE": 100.444330 }
+            { "ลำดับ": 4, "DATE - TIME": "2026/10/29 - 08:57:18", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "บางปะอิน_ขาเข้า", "LATITUDE": 14.270696, "LONGITUDE": 100.613489 },
+            { "ลำดับ": 3, "DATE - TIME": "2026/10/29 - 09:13:26", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "จุดกลับรถวันครู_ขาเข้า", "LATITUDE": 14.100140, "LONGITUDE": 100.618750 },
+            { "ลำดับ": 2, "DATE - TIME": "2026/10/29 - 09:34:23", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "DonMueang_Amari", "LATITUDE": 13.942811, "LONGITUDE": 100.608709 },
+            { "ลำดับ": 1, "DATE - TIME": "2026/10/29 - 11:40:24", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "ถนนรัชดาภิเษก มุ่งหน้าอโศก", "LATITUDE": 13.756621, "LONGITUDE": 100.565240 }
         ];
 
         function initMap() {
@@ -408,10 +424,27 @@
             L.control.zoom({ position: 'bottomright' }).addTo(map);
         }
 
-        function create3DCar() {
+        function create3DCar(plateText) {
             var container = document.createElement('div');
-            container.style.width = '60px';
-            container.style.height = '60px';
+            container.style.width = '120px';
+            container.style.height = '90px';
+            container.style.position = 'relative';
+
+            // License Plate Badge Label Moving With Car
+            var badge = document.createElement('div');
+            badge.className = 'car-badge';
+            badge.style.position = 'absolute';
+            badge.style.top = '0px';
+            badge.style.left = '50%';
+            badge.style.transform = 'translateX(-50%)';
+            badge.innerHTML = '<i class="fa-solid fa-car" style="color: var(--accent);"></i> ' + (plateText || 'รถยนต์');
+            container.appendChild(badge);
+
+            var canvasDiv = document.createElement('div');
+            canvasDiv.style.width = '60px';
+            canvasDiv.style.height = '60px';
+            canvasDiv.style.margin = '25px auto 0 auto';
+            container.appendChild(canvasDiv);
 
             var scene = new THREE.Scene();
             var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
@@ -420,7 +453,7 @@
 
             var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(60, 60);
-            container.appendChild(renderer.domElement);
+            canvasDiv.appendChild(renderer.domElement);
 
             var ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
@@ -457,8 +490,8 @@
             return L.divIcon({
                 html: container,
                 className: '',
-                iconSize: [60, 60],
-                iconAnchor: [30, 30]
+                iconSize: [120, 90],
+                iconAnchor: [60, 60]
             });
         }
 
@@ -511,9 +544,9 @@
                 return;
             }
 
-            // *** Sort by Date & Time DESCENDING (จากมากไปน้อย / ล่าสุดไปอดีต) ***
+            // *** Sort by Date & Time ASCENDING (น้อยไปมาก / อดีต -> ล่าสุด) ***
             routeData = normalized.sort(function(a, b) {
-                return new Date(b["DATE - TIME"]) - new Date(a["DATE - TIME"]);
+                return new Date(a["DATE - TIME"]) - new Date(b["DATE - TIME"]);
             });
 
             document.getElementById('banner').classList.add('hidden');
@@ -536,7 +569,9 @@
 
             map.fitBounds(pathPolyline.getBounds(), { padding: [50, 50] });
 
-            carMarker = L.marker(latLngs[0], { icon: create3DCar() }).addTo(map);
+            // Create 3D Car Marker with Plate Label
+            var plateInfo = routeData[0]["รายละเอียดรถ"] || "รถยนต์";
+            carMarker = L.marker(latLngs[0], { icon: create3DCar(plateInfo) }).addTo(map);
 
             var logList = document.getElementById('log-list');
             logList.innerHTML = '';
