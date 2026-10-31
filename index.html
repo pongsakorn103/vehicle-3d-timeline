@@ -337,7 +337,7 @@
         <i class="fa-solid fa-car-side" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i>
         <h2 style="margin-bottom: 10px; font-weight: 600;">3D Vehicle Timeline</h2>
         <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px;">
-            แสดงเส้นทางแอนิเมชัน 3D เรียงจากเวลาอดีต -> ปัจจุบัน พร้อมป้ายทะเบียนเคลื่อนที่
+            แสดงเส้นทางแอนิเมชัน 3D เรียงลำดับจากอดีต -> ปัจจุบัน
         </p>
         <div style="display: flex; gap: 10px; justify-content: center;">
             <button class="btn" onclick="triggerFileInput()">
@@ -401,12 +401,12 @@
         var carMarker = null;
 
         var sampleExcelData = [
-            { "ลำดับ": 6, "DATE - TIME": "2026/10/29 - 07:51:05", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "แยกปากบางบางงา_เข้า", "LATITUDE": 14.848605, "LONGITUDE": 100.444330 },
-            { "ลำดับ": 5, "DATE - TIME": "2026/10/29 - 08:18:59", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "มหาราช_ขาเข้า", "LATITUDE": 14.541224, "LONGITUDE": 100.502318 },
-            { "ลำดับ": 4, "DATE - TIME": "2026/10/29 - 08:57:18", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "บางปะอิน_ขาเข้า", "LATITUDE": 14.270696, "LONGITUDE": 100.613489 },
-            { "ลำดับ": 3, "DATE - TIME": "2026/10/29 - 09:13:26", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "จุดกลับรถวันครู_ขาเข้า", "LATITUDE": 14.100140, "LONGITUDE": 100.618750 },
-            { "ลำดับ": 2, "DATE - TIME": "2026/10/29 - 09:34:23", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "DonMueang_Amari", "LATITUDE": 13.942811, "LONGITUDE": 100.608709 },
-            { "ลำดับ": 1, "DATE - TIME": "2026/10/29 - 11:40:24", "รายละเอียดรถ": "4ขฌ 2080 กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "ถนนรัชดาภิเษก มุ่งหน้าอโศก", "LATITUDE": 13.756621, "LONGITUDE": 100.565240 }
+            { "ลำดับ": 6, "วันที่": "2026/10/29", "เวลา": "07:51:05", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "แยกปากบางบางงา_เข้า", "ละติจูด": 14.848605, "ลองจิจูด": 100.444330 },
+            { "ลำดับ": 5, "วันที่": "2026/10/29", "เวลา": "08:18:59", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "มหาราช_ขาเข้า", "ละติจูด": 14.541224, "ลองจิจูด": 100.502318 },
+            { "ลำดับ": 4, "วันที่": "2026/10/29", "เวลา": "08:57:18", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "บางปะอิน_ขาเข้า", "ละติจูด": 14.270696, "ลองจิจูด": 100.613489 },
+            { "ลำดับ": 3, "วันที่": "2026/10/29", "เวลา": "09:13:26", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "จุดกลับรถวันครู_ขาเข้า", "ละติจูด": 14.100140, "ลองจิจูด": 100.618750 },
+            { "ลำดับ": 2, "วันที่": "2026/10/29", "เวลา": "09:34:23", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "DonMueang_Amari", "ละติจูด": 13.942811, "ลองจิจูด": 100.608709 },
+            { "ลำดับ": 1, "วันที่": "2026/10/29", "เวลา": "11:40:24", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "ถนนรัชดาภิเษก มุ่งหน้าอโศก", "ละติจูด": 13.756621, "ลองจิจูด": 100.565240 }
         ];
 
         function initMap() {
@@ -430,7 +430,6 @@
             container.style.height = '90px';
             container.style.position = 'relative';
 
-            // License Plate Badge Label Moving With Car
             var badge = document.createElement('div');
             badge.className = 'car-badge';
             badge.style.position = 'absolute';
@@ -505,6 +504,15 @@
             if (el) el.classList.add('active');
         }
 
+        // Parse date strings safely for sorting
+        function parseDateTime(str) {
+            if (!str) return 0;
+            // Clean up string like "2026/10/29 - 11:40:24" to "2026/10/29 11:40:24"
+            var cleaned = str.toString().replace(' - ', ' ').replace(/-/g, '/');
+            var t = Date.parse(cleaned);
+            return isNaN(t) ? 0 : t;
+        }
+
         function normalizeRowData(row) {
             var lat = row['LATITUDE'] || row['ละติจูด'] || row['latitude'] || row['lat'] || 0;
             var lng = row['LONGITUDE'] || row['ลองจิจูด'] || row['longitude'] || row['lng'] || 0;
@@ -527,6 +535,7 @@
                 LATITUDE: parseFloat(lat),
                 LONGITUDE: parseFloat(lng),
                 "DATE - TIME": datetime,
+                "TIMESTAMP": parseDateTime(datetime),
                 "จุดติดตั้งกล้อง": camera,
                 "รายละเอียดรถ": carInfo
             };
@@ -544,9 +553,9 @@
                 return;
             }
 
-            // *** Sort by Date & Time ASCENDING (น้อยไปมาก / อดีต -> ล่าสุด) ***
+            // *** Sort by TIMESTAMP Ascending (อดีต -> ล่าสุด) ***
             routeData = normalized.sort(function(a, b) {
-                return new Date(a["DATE - TIME"]) - new Date(b["DATE - TIME"]);
+                return a.TIMESTAMP - b.TIMESTAMP;
             });
 
             document.getElementById('banner').classList.add('hidden');
