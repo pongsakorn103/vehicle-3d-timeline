@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D Vehicle Timeline Visualizer</title>
     
     <!-- Leaflet CSS -->
@@ -15,8 +15,8 @@
     <style>
         :root {
             --bg-dark: #0f172a;
-            --panel-bg: rgba(30, 41, 59, 0.85);
-            --panel-border: rgba(255, 255, 255, 0.1);
+            --panel-bg: rgba(30, 41, 59, 0.9);
+            --panel-border: rgba(255, 255, 255, 0.15);
             --primary: #3b82f6;
             --primary-hover: #2563eb;
             --accent: #06b6d4;
@@ -29,6 +29,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Sarabun', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body, html {
@@ -49,26 +50,35 @@
         /* App Header */
         .app-header {
             position: absolute;
-            top: 15px;
-            left: 15px;
+            top: 12px;
+            left: 12px;
+            right: 12px;
             z-index: 1000;
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
-            padding: 10px 18px;
+            padding: 10px 14px;
             border-radius: 12px;
             border: 1px solid var(--panel-border);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .app-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             color: #fff;
         }
 
@@ -76,20 +86,20 @@
             background: var(--primary);
             color: #fff;
             border: none;
-            padding: 8px 14px;
+            padding: 8px 12px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             display: flex;
             align-items: center;
             gap: 6px;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
-        .btn:hover {
+        .btn:hover, .btn:active {
             background: var(--primary-hover);
-            transform: translateY(-1px);
         }
 
         .btn-outline {
@@ -113,9 +123,10 @@
             backdrop-filter: blur(16px);
             border: 1px solid var(--panel-border);
             border-radius: 16px;
-            padding: 30px 40px;
+            padding: 24px 20px;
             text-align: center;
-            max-width: 480px;
+            width: 90%;
+            max-width: 420px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
             transition: opacity 0.4s ease, transform 0.4s ease;
         }
@@ -130,21 +141,18 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-left: 10px;
-            padding-left: 10px;
-            border-left: 1px solid var(--panel-border);
         }
 
         .color-dot {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid transparent;
             transition: transform 0.2s;
         }
 
-        .color-dot:hover, .color-dot.active {
+        .color-dot.active {
             transform: scale(1.2);
             border-color: #fff;
         }
@@ -152,34 +160,34 @@
         /* Controls Panel */
         .controls-panel {
             position: absolute;
-            bottom: 20px;
+            bottom: 15px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
-            width: 90%;
-            max-width: 800px;
+            width: 94%;
+            max-width: 760px;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border-radius: 16px;
             border: 1px solid var(--panel-border);
-            padding: 16px 24px;
+            padding: 14px 18px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             transition: opacity 0.3s;
         }
 
         .controls-panel.disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             pointer-events: none;
         }
 
         .timeline-slider {
             width: 100%;
             -webkit-appearance: none;
-            height: 6px;
-            border-radius: 3px;
+            height: 8px;
+            border-radius: 4px;
             background: rgba(255, 255, 255, 0.2);
             outline: none;
             cursor: pointer;
@@ -187,8 +195,8 @@
 
         .timeline-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             background: var(--accent);
             cursor: pointer;
@@ -199,27 +207,29 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .play-btns {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .speed-select {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.9);
             color: var(--text-main);
             border: 1px solid var(--panel-border);
             padding: 6px 10px;
             border-radius: 6px;
             outline: none;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         /* Moving Car Label Badge */
         .car-badge {
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(15, 23, 42, 0.95);
             border: 1px solid var(--accent);
             color: #fff;
             padding: 3px 8px;
@@ -233,28 +243,53 @@
             gap: 5px;
         }
 
-        /* Sidebar Log */
+        /* Sidebar Log & Toggle Button */
+        .sidebar-toggle-btn {
+            position: absolute;
+            top: 75px;
+            right: 15px;
+            z-index: 1001;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+        .sidebar-toggle-btn.hidden {
+            display: none;
+        }
+
         .sidebar {
             position: absolute;
-            top: 80px;
+            top: 75px;
             right: 15px;
-            bottom: 120px;
-            width: 320px;
+            bottom: 135px;
+            width: 300px;
+            max-width: calc(100% - 30px);
             z-index: 1000;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border-radius: 12px;
             border: 1px solid var(--panel-border);
-            padding: 14px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         .sidebar.collapsed {
-            transform: translateX(350px);
+            transform: translateX(120%);
+            opacity: 0;
+            pointer-events: none;
         }
 
         .log-list {
@@ -262,17 +297,17 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding-right: 4px;
+            gap: 6px;
+            padding-right: 2px;
         }
 
         .log-item {
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.7);
             border: 1px solid rgba(255,255,255,0.05);
-            padding: 10px;
+            padding: 8px 10px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             transition: all 0.2s;
         }
 
@@ -294,6 +329,18 @@
         #file-input {
             display: none;
         }
+
+        @media(max-width: 600px) {
+            .app-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .header-right-tools {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
     </style>
 
     <!-- External Libraries -->
@@ -307,44 +354,52 @@
 
     <!-- Header Controls -->
     <div class="app-header">
-        <div class="app-title">
-            <i class="fa-solid fa-route" style="color: var(--accent);"></i>
-            <span>3D Timeline Track</span>
+        <div class="header-left">
+            <div class="app-title">
+                <i class="fa-solid fa-route" style="color: var(--accent);"></i>
+                <span>3D Timeline Track</span>
+            </div>
+            <button class="btn" onclick="triggerFileInput()">
+                <i class="fa-solid fa-file-excel"></i> อัปโหลด
+            </button>
+            <input type="file" id="file-input" accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
+
+            <button class="btn btn-outline" onclick="loadSampleData()">
+                <i class="fa-solid fa-database"></i> ตัวอย่าง
+            </button>
         </div>
-        
-        <button class="btn" onclick="triggerFileInput()">
-            <i class="fa-solid fa-file-excel"></i> อัปโหลดไฟล์ Excel
-        </button>
-        <input type="file" id="file-input" accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
 
-        <button class="btn btn-outline" onclick="loadSampleData()">
-            <i class="fa-solid fa-database"></i> ใช้ข้อมูลตัวอย่าง
-        </button>
-
-        <!-- Color Picker -->
-        <div class="color-picker-wrapper">
-            <span style="font-size: 0.75rem; color: var(--text-sub);">สีรถ:</span>
-            <div class="color-dot active" style="background: #ffffff;" onclick="setCarColor(0xffffff, this)" title="สีขาว"></div>
-            <div class="color-dot" style="background: #111111;" onclick="setCarColor(0x111111, this)" title="สีดำ"></div>
-            <div class="color-dot" style="background: #94a3b8;" onclick="setCarColor(0x94a3b8, this)" title="สีเทา"></div>
-            <div class="color-dot" style="background: #ef4444;" onclick="setCarColor(0xef4444, this)" title="สีแดง"></div>
-            <div class="color-dot" style="background: #3b82f6;" onclick="setCarColor(0x3b82f6, this)" title="สีน้ำเงิน"></div>
+        <div class="header-right-tools" style="display: flex; align-items: center; gap: 10px;">
+            <!-- Color Picker -->
+            <div class="color-picker-wrapper">
+                <span style="font-size: 0.75rem; color: var(--text-sub);">สี:</span>
+                <div class="color-dot active" style="background: #ffffff;" onclick="setCarColor(0xffffff, this)" title="ขาว"></div>
+                <div class="color-dot" style="background: #111111;" onclick="setCarColor(0x111111, this)" title="ดำ"></div>
+                <div class="color-dot" style="background: #94a3b8;" onclick="setCarColor(0x94a3b8, this)" title="เทา"></div>
+                <div class="color-dot" style="background: #ef4444;" onclick="setCarColor(0xef4444, this)" title="แดง"></div>
+                <div class="color-dot" style="background: #3b82f6;" onclick="setCarColor(0x3b82f6, this)" title="น้ำเงิน"></div>
+            </div>
         </div>
     </div>
 
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle-btn hidden" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="ซ่อน/แสดงประวัติ">
+        <i class="fa-solid fa-list" id="toggle-icon"></i>
+    </button>
+
     <!-- Pre-upload Banner -->
     <div class="instruction-banner" id="banner">
-        <i class="fa-solid fa-car-side" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i>
-        <h2 style="margin-bottom: 10px; font-weight: 600;">3D Vehicle Timeline</h2>
-        <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px;">
-            แสดงเส้นทางแอนิเมชัน 3D เรียงลำดับจากอดีต -> ปัจจุบัน
+        <i class="fa-solid fa-car-side" style="font-size: 2.5rem; color: var(--accent); margin-bottom: 12px;"></i>
+        <h2 style="margin-bottom: 8px; font-weight: 600; font-size: 1.2rem;">3D Vehicle Timeline</h2>
+        <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 16px;">
+            อัปโหลดไฟล์ Excel/CSV หรือกดปุ่มข้อมูลตัวอย่าง รองรับมือถือและคอมพิวเตอร์
         </p>
-        <div style="display: flex; gap: 10px; justify-content: center;">
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
             <button class="btn" onclick="triggerFileInput()">
                 <i class="fa-solid fa-upload"></i> อัปโหลดไฟล์
             </button>
             <button class="btn btn-outline" onclick="loadSampleData()">
-                ลองใช้ข้อมูลตัวอย่าง
+                ข้อมูลตัวอย่าง
             </button>
         </div>
     </div>
@@ -361,17 +416,17 @@
                 <button class="btn btn-outline" onclick="resetAnimation()">
                     <i class="fa-solid fa-rotate-left"></i> รีเซ็ต
                 </button>
-                <span id="time-display" style="font-size: 0.85rem; color: var(--accent); margin-left: 10px;">--:--:--</span>
+                <span id="time-display" style="font-size: 0.8rem; color: var(--accent);">--:--:--</span>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 0.8rem; color: var(--text-sub);">ความเร็ว (Slow-Mo):</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.75rem; color: var(--text-sub);">ความเร็ว:</span>
                 <select class="speed-select" id="speed-select" onchange="changeSpeed(this.value)">
-                    <option value="0.25">0.25x (ช้ามาก)</option>
-                    <option value="0.5">0.5x (Slow-Motion)</option>
-                    <option value="1" selected>1.0x (ปกติ)</option>
-                    <option value="2">2.0x (เร็ว)</option>
-                    <option value="5">5.0x (เร่งด่วน)</option>
+                    <option value="0.25">0.25x</option>
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1.0x</option>
+                    <option value="2">2.0x</option>
+                    <option value="5">5.0x</option>
                 </select>
             </div>
         </div>
@@ -379,8 +434,8 @@
 
     <!-- Sidebar Log -->
     <div class="sidebar collapsed" id="sidebar">
-        <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 0.9rem;">
-            <span><i class="fa-solid fa-list-check" style="color: var(--accent);"></i> ประวัติผ่านจุดตรวจ (อดีต -> ล่าสุด)</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 0.85rem;">
+            <span><i class="fa-solid fa-list-check" style="color: var(--accent);"></i> ประวัติผ่านจุดตรวจ</span>
             <span id="total-count" style="font-size: 0.75rem; color: var(--text-sub);">0 จุด</span>
         </div>
         <div class="log-list" id="log-list"></div>
@@ -399,14 +454,15 @@
         var currentCarColor = 0xffffff;
         var pathPolyline = null;
         var carMarker = null;
+        var isSidebarOpen = false;
 
         var sampleExcelData = [
-            { "ลำดับ": 6, "วันที่": "2026/10/29", "เวลา": "07:51:05", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "แยกปากบางบางงา_เข้า", "ละติจูด": 14.848605, "ลองจิจูด": 100.444330 },
-            { "ลำดับ": 5, "วันที่": "2026/10/29", "เวลา": "08:18:59", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "มหาราช_ขาเข้า", "ละติจูด": 14.541224, "ลองจิจูด": 100.502318 },
-            { "ลำดับ": 4, "วันที่": "2026/10/29", "เวลา": "08:57:18", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "บางปะอิน_ขาเข้า", "ละติจูด": 14.270696, "ลองจิจูด": 100.613489 },
-            { "ลำดับ": 3, "วันที่": "2026/10/29", "เวลา": "09:13:26", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "จุดกลับรถวันครู_ขาเข้า", "ละติจูด": 14.100140, "ลองจิจูด": 100.618750 },
-            { "ลำดับ": 2, "วันที่": "2026/10/29", "เวลา": "09:34:23", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "DonMueang_Amari", "ละติจูด": 13.942811, "ลองจิจูด": 100.608709 },
-            { "ลำดับ": 1, "วันที่": "2026/10/29", "เวลา": "11:40:24", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "ถนนรัชดาภิเษก มุ่งหน้าอโศก", "ละติจูด": 13.756621, "ลองจิจูด": 100.565240 }
+            { "ลำดับ": 1, "วันที่": "2026/10/29", "เวลา": "07:51:05", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "แยกปากบางบางงา_เข้า", "ละติจูด": 14.848605, "ลองจิจูด": 100.444330 },
+            { "ลำดับ": 2, "วันที่": "2026/10/29", "เวลา": "08:18:59", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "มหาราช_ขาเข้า", "ละติจูด": 14.541224, "ลองจิจูด": 100.502318 },
+            { "ลำดับ": 3, "วันที่": "2026/10/29", "เวลา": "08:57:18", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "บางปะอิน_ขาเข้า", "ละติจูด": 14.270696, "ลองจิจูด": 100.613489 },
+            { "ลำดับ": 4, "วันที่": "2026/10/29", "เวลา": "09:13:26", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "จุดกลับรถวันครู_ขาเข้า", "ละติจูด": 14.100140, "ลองจิจูด": 100.618750 },
+            { "ลำดับ": 5, "วันที่": "2026/10/29", "เวลา": "09:34:23", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "DonMueang_Amari", "ละติจูด": 13.942811, "ลองจิจูด": 100.608709 },
+            { "ลำดับ": 6, "วันที่": "2026/10/29", "เวลา": "11:40:24", "ทะเบียนรถ": "4ขฌ 2080", "จังหวัด": "กรุงเทพมหานคร", "จุดติดตั้งกล้อง": "ถนนรัชดาภิเษก มุ่งหน้าอโศก", "ละติจูด": 13.756621, "ลองจิจูด": 100.565240 }
         ];
 
         function initMap() {
@@ -422,6 +478,19 @@
             }).addTo(map);
 
             L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+
+        function toggleSidebar() {
+            isSidebarOpen = !isSidebarOpen;
+            var sidebar = document.getElementById('sidebar');
+            var icon = document.getElementById('toggle-icon');
+            if (isSidebarOpen) {
+                sidebar.classList.remove('collapsed');
+                icon.className = "fa-solid fa-xmark";
+            } else {
+                sidebar.classList.add('collapsed');
+                icon.className = "fa-solid fa-list";
+            }
         }
 
         function create3DCar(plateText) {
@@ -504,10 +573,8 @@
             if (el) el.classList.add('active');
         }
 
-        // Parse date strings safely for sorting
         function parseDateTime(str) {
             if (!str) return 0;
-            // Clean up string like "2026/10/29 - 11:40:24" to "2026/10/29 11:40:24"
             var cleaned = str.toString().replace(' - ', ' ').replace(/-/g, '/');
             var t = Date.parse(cleaned);
             return isNaN(t) ? 0 : t;
@@ -553,14 +620,20 @@
                 return;
             }
 
-            // *** Sort by TIMESTAMP Ascending (อดีต -> ล่าสุด) ***
             routeData = normalized.sort(function(a, b) {
                 return a.TIMESTAMP - b.TIMESTAMP;
             });
 
             document.getElementById('banner').classList.add('hidden');
             document.getElementById('controls-panel').classList.remove('disabled');
-            document.getElementById('sidebar').classList.remove('collapsed');
+            document.getElementById('sidebar-toggle-btn').classList.remove('hidden');
+
+            // Open sidebar by default on desktop, keep closed on mobile if needed
+            if (window.innerWidth > 768) {
+                isSidebarOpen = true;
+                document.getElementById('sidebar').classList.remove('collapsed');
+                document.getElementById('toggle-icon').className = "fa-solid fa-xmark";
+            }
 
             if (pathPolyline) map.removeLayer(pathPolyline);
             if (carMarker) map.removeLayer(carMarker);
@@ -578,7 +651,6 @@
 
             map.fitBounds(pathPolyline.getBounds(), { padding: [50, 50] });
 
-            // Create 3D Car Marker with Plate Label
             var plateInfo = routeData[0]["รายละเอียดรถ"] || "รถยนต์";
             carMarker = L.marker(latLngs[0], { icon: create3DCar(plateInfo) }).addTo(map);
 
